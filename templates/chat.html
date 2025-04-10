@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-xl bg-white shadow-lg rounded-xl p-6 space-y-4">
+      <div class="chat flex flex-col space-y-2 max-h-80 overflow-y-auto"></div>
+
+      <form class="form flex flex-col md:flex-row gap-2">
+        <input type="text" placeholder="Insira seu nome" id="nome" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        <input type="text" placeholder="Insira sua mensagem" id="mensagem" class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        <button type="submit" class="px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition">Enviar</button>
+      </form>
+    </div>
+
+    <script src="https://cdn.socket.io/3.1.3/socket.io.min.js"></script>
+    <script>
+      window.onload = function () {
+        const socket = io('http://127.0.0.1:5000')
+      
+        function addToChat(msg) {
+            const chat = document.querySelector('.chat');
+            const wrapper = document.createElement('div');
+        
+           
+            const isMine = msg.name === nomeUsuario;
+        
+            wrapper.classList.add('flex', 'w-full');
+        
+            if (isMine) {
+                wrapper.classList.add('justify-end'); 
+            } else {
+                wrapper.classList.add('justify-start'); 
+            }
+        
+            const span = document.createElement('span');
+            span.innerHTML = `<strong>${msg.name}:</strong> ${msg.message}`;
+            span.classList.add('px-4', 'py-2', 'rounded-lg', 'max-w-xs');
+        
+            if (isMine) {
+                span.classList.add('bg-green-200', 'text-green-900', 'text-right');
+            } else {
+                span.classList.add('bg-blue-100', 'text-blue-800', 'text-left');
+            }
+        
+            wrapper.appendChild(span);
+            chat.appendChild(wrapper);
+        }
+      
+        socket.on('connect', () => {
+          socket.send('Usuário conectado ao socket!')
+        })
+      
+        let nomeUsuario = ''
+      
+        document.querySelector('form').addEventListener('submit', function (event) {
+          event.preventDefault()
+      
+          nomeUsuario = event.target[0].value
+          const mensagem = event.target[1].value
+      
+          socket.emit('sendMessage', { name: nomeUsuario, message: mensagem })
+      
+          event.target[1].value = ''
+        })
+      
+        socket.on('getMessage', (msg) => {
+          addToChat(msg)
+        })
+      
+        socket.on('message', (msgs) => {
+          for (msg of msgs) {
+            addToChat(msg)
+          }
+        })
+      }
+    </script>
+  </body>
+</html>
